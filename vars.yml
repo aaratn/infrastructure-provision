@@ -1,0 +1,30 @@
+---
+packages_required:
+  - apache2
+  - apache2-utils
+  - python2.7
+  - python-pip
+  - php7.2
+  - libapache2-mod-php7.2
+  - php-xml
+  - php-mbstring
+  - php-zip
+  - php-gd
+  - php-mysql
+  - php7.2-curl
+  - php-soap
+  - php-oauth
+  - php-xmlrpc
+  - php-apcu
+  - php-imagick
+  - unzip
+repos_required:
+      - "ppa:ondrej/apache2"
+      - "ppa:jonathonf/python-2.7"
+      - "ppa:ondrej/php"
+domain_name: aarat.net
+apache2_port_http: 80
+apache2_port_https: 443
+web_root: /var/www/website
+apache_max_workers: 25
+wparchive: https://wordpress.org/latest.zip

@@ -1,0 +1,130 @@
+---
+
+- name: Make sure required apache modules are enabled
+  apache2_module:
+    state: present
+    name: "{{item}}"
+  with_items:
+    - rewrite
+    - expires
+    - headers
+    - status
+    - mpm_prefork
+    - remoteip
+    - php7.2
+  notify: restart apache
+
+- name: Increase Max Open Files
+  pam_limits:
+    domain: www-data
+    limit_type: soft
+    limit_item: nofile
+    value: 64000
+  register: limitsresult
+
+- name: Copy php.ini
+  template:
+    src: php.ini.j2
+    dest: /etc/php/7.2/apache2/php.ini
+  register: phpiniresult
+
+- name: Add apcu lines on apcu.ini
+  blockinfile:
+    path: /etc/php/7.2/apache2/conf.d/20-apcu.ini
+    block: |
+      apc.enabled = 1
+      apc.enable_cli = 1
+  register: apcuiniresult
+
+- name: Restart Apache if configs changed
+  service:
+    name: apache2
+    state: restarted
+  when: limitsresult.changed or phpiniresult.changed or apcuiniresult.changed
+
+- name: Fs.Files Max
+  sysctl:
+    name: fs.file-max
+    value: 64000
+    sysctl_file: /etc/sysctl.conf
+    reload: yes
+
+- name: Make Sure Default Directories Exists
+  file:
+    path: "{{item}}"
+    state: directory
+    owner: www-data
+    group: www-data
+  with_items:
+    - /var/www/html
+    - "{{web_root}}"
+
+- name: Copy Main apache2.conf
+  copy:
+    src: apache2.conf
+    dest: /etc/apache2/apache2.conf
+  notify: restart apache
+
+- name: Configure Apache
+  template: 
+    src: webserver.conf.j2
+    dest: '/etc/apache2/sites-enabled/{{item}}.conf'
+  with_items:
+    - "{{domain_name}}"
+  notify: restart apache
+
+- name: Disable apache2 ssl module
+  apache2_module:
+    state: absent
+    name: ssl
+  notify: restart apache
+
+- name: Configure Apache ports
+  template: 
+    src: ports.conf.j2
+    dest: '/etc/apache2/ports.conf'
+  notify: restart apache
+
+- name: Copy Apache2 Default site
+  template:
+    src: 000-default.conf.j2
+    dest: /etc/apache2/sites-enabled/000-default.conf
+  notify: restart apache
+
+- name: Copy ssl.conf
+  copy:
+    src: ssl.conf
+    dest: /etc/apache2/mods-enabled/ssl.conf
+  notify: restart apache
+
+- name: Copy security.conf
+  template:
+    src: security.conf.j2
+    dest: /etc/apache2/conf-enabled/security.conf
+  notify: restart apache
+
+- name: Copy mpm_prefork conf
+  template:
+    src: mpm_prefork.conf.j2
+    dest: /etc/apache2/mods-enabled/mpm_prefork.conf
+  notify: restart apache
+
+- name: Download Latest Wordpress
+  unarchive:
+    src: "{{wparchive}}"
+    dest: "{{web_root}}"
+    remote_src: yes
+    owner: www-data
+    group: www-data
+    creates: "{{web_root}}/index.php"
+
+- name: Move Files inside wordpress directory to root
+  shell: "shopt -s dotglob nullglob && mv {{web_root}}/wordpress/* {{web_root}}/ && rm -rf {{web_root}}/wordpress"
+  args:
+    executable: /bin/bash
+    creates: "{{web_root}}/index.php"
+
+- name: Copy Wordpress Config File
+  template:
+    src: wp-config.php.j2
+    dest: /var/www/website/wp-config.php

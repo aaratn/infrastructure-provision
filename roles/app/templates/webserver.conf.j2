@@ -1,0 +1,12 @@
+<VirtualHost {{ansible_eth0.ipv4.address}}:{{apache2_port_http}}>
+    DocumentRoot {{web_root}}
+    ServerName {{item}} 
+    ServerAlias www.{{item}}
+    ErrorLog ${APACHE_LOG_DIR}/{{item}}.error.log
+    CustomLog ${APACHE_LOG_DIR}/{{item}}.access.log combined
+    <Directory {{web_root}}/>
+    AllowOverride All
+    Options Indexes FollowSymLinks MultiViews
+    Require all granted
+    </Directory>
+</VirtualHost>

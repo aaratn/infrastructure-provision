@@ -1,0 +1,15 @@
+<VirtualHost _default_:{{apache2_port_http}}>
+	ServerAdmin webmaster@localhost
+	ServerName localhost
+	ServerAlias 127.0.0.1
+	DocumentRoot /var/www/html
+	ErrorLog ${APACHE_LOG_DIR}/error.log
+	CustomLog ${APACHE_LOG_DIR}/access.log combined
+<Location /server-status>
+    SetHandler server-status
+    Require ip 127.0.0.1
+</Location>
+
+</VirtualHost>
+
+# vim: syntax=apache ts=4 sw=4 sts=4 sr noet

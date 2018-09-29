@@ -1,0 +1,17 @@
+---
+- name: Add Required Repos
+  apt_repository:
+     repo: '{{item}}'
+  with_items:
+    - "{{repos_required}}"
+  notify:
+    - update apt cache
+
+
+- name: Install Required Packages
+  apt:
+   update_cache: yes
+   cache_valid_time: 3600
+   name: "{{item}}"
+  with_items:
+    - "{{packages_required}}"
